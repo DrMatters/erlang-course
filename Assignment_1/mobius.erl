@@ -1,20 +1,55 @@
 -module(mobius).
--export([is_prime/1, prime_factors/1]).
+-export([is_prime/1, prime_factors/1, twos_factors/1, is_square_multiple/1, find_square_multiples/2]).
 -import(math, [sqrt/1]).
--import(lists, [filter/2, any/2]).
 
 is_prime(N) ->
-    if N rem 2 == 0 -> false; 
-       true -> not any(
-          fun (Num) -> (Num * Num =< N) andalso (N rem Num == 0) end, 
-          lists:seq(3, N, 2))
-    end.
+  if N rem 2 == 0 -> false;
+    true -> not lists:any(
+      fun(Num) -> (Num * Num =< N) andalso (N rem Num == 0) end,
+      lists:seq(3, N, 2))
+  end.
 
-prime_factors(N) -> 
-    filter(fun is_prime/1, factors(N)).
+prime_factors(N) ->
+  {M, Twos} = twos_factors(N),
+  prime_factors_helper(M, 3, Twos).
 
-factors(N) -> 
-    [ X || 
-      X <- lists:seq(2, N),
-      N rem X == 0
-    ].
+prime_factors_helper(N, Divisor, Factors) ->
+  if N =< 1 -> Factors;
+    N rem Divisor == 0 -> prime_factors_helper(N div Divisor, Divisor, [Divisor | Factors]);
+    true -> prime_factors_helper(N, Divisor + 2, Factors)
+  end.
+
+twos_factors(N) ->
+  twos_factors_helper(N, []).
+
+twos_factors_helper(N, Factors) ->
+  if N =< 1 -> {N, Factors};
+    N rem 2 == 0 -> twos_factors_helper(N div 2, [2 | Factors]);
+    true -> {N, Factors}
+  end.
+
+is_square_multiple(N) ->
+  Factors = prime_factors(N),
+  UniqueFactors = sets:from_list(Factors),
+  length(Factors) > sets:size(UniqueFactors).
+
+find_sublist_of_length(_, _, []) -> [];
+find_sublist_of_length(Pred, Len, [H | T]) ->
+  Sub = lists:sublist([H | T], Len),
+  LenSub = length(Sub),
+  Passed = lists:all(Pred, Sub),
+  if LenSub < Len -> fail;
+    Passed -> Sub;
+    true -> find_sublist_of_length(Pred, Len, T)
+  end.
+
+find_square_multiples(Count, MaxN) ->
+  Checked = [
+    {X, is_square_multiple(X)} ||
+    X <- lists:seq(2, MaxN + 2)
+  ],
+  Triplet = find_sublist_of_length(fun({_, Check}) -> Check end, Count, Checked),
+  case Triplet of
+    fail -> fail;
+    [{E, _} | _] -> E
+  end.

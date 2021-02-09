@@ -18,6 +18,3 @@ tail_fb(N) -> tail_fb_helper(N, 1, 0, 1).
 tail_fb_helper(N, CurrentN, _, Cur) when N == CurrentN -> Cur;
 tail_fb_helper(N, CurrentN, Prev, Cur) ->
     tail_fb_helper(N, CurrentN + 1, Cur, Prev + Cur). 
-
-
-

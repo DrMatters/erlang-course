@@ -2,11 +2,13 @@
 -export([is_prime/1, prime_factors/1, twos_factors/1, is_square_multiple/1, find_square_multiples/2]).
 -import(math, [sqrt/1]).
 
-is_prime(N) ->
-  if N rem 2 == 0 -> false;
-    true -> not lists:any(
-      fun(Num) -> (Num * Num =< N) andalso (N rem Num == 0) end,
-      lists:seq(3, N, 2))
+is_prime(N) -> is_prime_helper(sqrt(N), N, 2).
+
+is_prime_helper(Threshold, _, Divisor) when Divisor > Threshold -> true;
+is_prime_helper(Threshold, N, 2) -> N rem 2 > 0 andalso is_prime_helper(Threshold, N, 3);
+is_prime_helper(Threshold, N, Divisor) ->
+  if N rem Divisor == 0 -> false;
+    true -> is_prime_helper(Threshold, N, Divisor + 2)
   end.
 
 prime_factors(N) ->

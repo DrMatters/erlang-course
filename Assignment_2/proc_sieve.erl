@@ -1,6 +1,6 @@
 -module(proc_sieve).
 
--export([generate/1, sieve/0]).
+-export([generate/1, gen_print/1, sieve/0]).
 
 sieve() ->
   receive
@@ -50,6 +50,9 @@ generate(MaxN) ->
   ChildPID = spawn(proc_sieve, sieve, []),
   send_seq(2, MaxN, ChildPID),
   receive
-    Primes ->
-      lists:foreach(fun(E) -> io:format("~p~n", [E]) end, Primes)
+    Primes -> Primes
   end.
+
+gen_print(MaxN) ->
+  Primes = generate(MaxN),
+  lists:foreach(fun(E) -> io:format("~p~n", [E]) end, Primes).

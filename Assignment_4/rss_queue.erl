@@ -1,7 +1,7 @@
 -module(rss_queue).
 -define(QUEUE_TIMEOUT_MILLISECONDS, 1000).
 -record(queue_item, {pubTime, item}).
--export([server/0, start/0]).
+-export([server/0, start/0, add_feed/2, get_all/1]).
 
 start() -> spawn(?MODULE, server, []).
 

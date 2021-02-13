@@ -34,29 +34,29 @@ server_queue(Queue) ->
   end.
 
 handle_add_item(Queue, RSSItem) ->
-  case search_item(Queue, RSSItem) of
+  case get_item_recency_state(Queue, RSSItem) of
     {same, _} -> Queue;
     {updated, FeedItem} ->
       QueueWithoutOldItem = lists:delete(FeedItem, Queue),
-      add_item_to_queue(QueueWithoutOldItem, RSSItem);
-    different -> add_item_to_queue(Queue, RSSItem)
+      add_item_to_server_queue(QueueWithoutOldItem, RSSItem);
+    different -> add_item_to_server_queue(Queue, RSSItem)
   end.
 
-add_item_to_queue(Queue, Item) ->
+add_item_to_server_queue(Queue, Item) ->
   PubTime = rss_parse:get_item_time(Item),
   QueueItem = #queue_item{pubTime = PubTime, item = Item},
-  add_item_to_sorted_queue(Queue, QueueItem).
+  add_item_to_sorted_list(Queue, QueueItem).
 
-add_item_to_sorted_queue([], Item) -> [Item];
-add_item_to_sorted_queue([H | T], Item) ->
+add_item_to_sorted_list([], Item) -> [Item];
+add_item_to_sorted_list([H | T], Item) ->
   CompareByPubTime = fun(#queue_item{pubTime = A}, #queue_item{pubTime = B}) -> A =< B end,
   lists:sort(CompareByPubTime, [Item, H | T])
 .
 
-search_item([], _) -> different;
-search_item([FeedItem | T], Item) ->
+get_item_recency_state([], _) -> different;
+get_item_recency_state([FeedItem | T], Item) ->
   case rss_parse:compare_feed_items(FeedItem#queue_item.item, Item) of
     same -> {same, FeedItem};
     updated -> {updated, FeedItem};
-    different -> search_item(T, Item)
+    different -> get_item_recency_state(T, Item)
   end.

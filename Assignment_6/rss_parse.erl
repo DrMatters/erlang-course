@@ -1,6 +1,6 @@
 -module(rss_parse).
 -include_lib("xmerl/include/xmerl.hrl").
--export([is_rss2_feed/1, get_feed_items/1, get_item_time/1, compare_feed_items/2]).
+-export([is_rss2_feed/1, get_feed_items/1, get_item_time/1, compare_feed_items/2, get_item_guid/1]).
 
 %% @doc checks if Root is a valid rss2 feed
 is_rss2_feed(Root) ->
@@ -23,6 +23,13 @@ get_item_time(Item) ->
         Datetime -> calendar:datetime_to_gregorian_seconds(Datetime)
       end;
     false -> bad_date
+  end.
+
+%% @doc extract guid property from RSS Item
+get_item_guid(Item) ->
+  case lists:keyfind(guid, #xmlElement.name, Item#xmlElement.content) of
+    #xmlElement{content = [#xmlText{value = Guid}]} -> Guid;
+    false -> bad_guid
   end.
 
 %% @doc compares recency of OldItem and NewItem

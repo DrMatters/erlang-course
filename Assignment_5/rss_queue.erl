@@ -55,7 +55,7 @@ server_loop(QueueState) ->
         ?INFO("received add_item message~n", []),
         handle_add_item(QueueState, RSSItem);
       {get_all, ReqPid} ->
-        ?INFO("received get_all message~n", []),
+        ?INFO("received get_all message~n", []);
       {subscribe, QPid} ->
         ?INFO("received {subscribe, ~p} message~n", [QPid]),
         handle_subscribe(QueueState, QPid);
@@ -72,7 +72,7 @@ server_loop(QueueState) ->
 handle_add_item(#queueState{items = Items, subscribers = Subscribers} = QueueState, RSSItem) ->
   case lists:keyfind(title, #xmlElement.name, RSSItem#xmlElement.content) of
     false -> ok;
-    Title ->?INFO("~s~p", [Title])
+    Title -> ?INFO("~s~p", [Title])
   end,
   case get_item_recency_state(Items, RSSItem) of
     {same, _} ->
@@ -102,11 +102,11 @@ handle_subscribe(#queueState{items = Queue, subscribers = Subscribers}, QPid) wh
   #queueState{items = Queue, subscribers = UpdatedSubscribers}.
 
 %% @doc unsubscribes QPid from Queue
-handle_unsubscribe(QueueState, QPid) when is_pid(QPid) -> remove_subscriber(QueueState, QPid).  
+handle_unsubscribe(QueueState, QPid) when is_pid(QPid) -> remove_subscriber(QueueState, QPid).
 
 %% @doc remove QPid subscriber from Queue
-remove_subscriber(#queueState{items = Queue, subscribers = Subscribers}, QPid) ->
-  case maps:take(QPid, Subscribers) of 
+remove_subscriber(#queueState{items = Queue, subscribers = Subscribers} = QueueState, QPid) ->
+  case maps:take(QPid, Subscribers) of
     {Ref, UpdatedSubscribers} ->
       erlang:demonitor(Ref),
       #queueState{items = Queue, subscribers = UpdatedSubscribers};

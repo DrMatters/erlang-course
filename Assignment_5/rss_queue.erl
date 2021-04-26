@@ -97,7 +97,7 @@ handle_new_item(#queueState{items = Queue, subscribers = Subscribers}, NewItem) 
 %% @doc subscribes QPid on Queue
 handle_subscribe(#queueState{items = Queue, subscribers = Subscribers}, QPid) when is_pid(QPid) ->
   SubRef = erlang:monitor(process, QPid),
-  UpdatedSubscribers = map:put(QPid, SubRef, Subscribers),
+  UpdatedSubscribers = maps:put(QPid, SubRef, Subscribers),
   lists:foreach(fun(#queueItem{item = Item}) -> add_item(QPid, Item) end, Queue),
   #queueState{items = Queue, subscribers = UpdatedSubscribers}.
 
@@ -141,5 +141,5 @@ get_item_recency_state([FeedItem | T], Item) ->
 
 %% @doc broadcasts Item to all subscribers from QueuePIDs
 send_item_to_queues(Item, QueuePIDs) ->
-  SubsList = sets:to_list(QueuePIDs),
+  SubsList = maps:keys(QueuePIDs),
   lists:foreach(fun(SubPID) -> add_item(SubPID, Item) end, SubsList).

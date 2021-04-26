@@ -70,10 +70,6 @@ server_loop(QueueState) ->
 
 %% @doc handles add_item message, adds RSSItem to Queue
 handle_add_item(#queueState{items = Items, subscribers = Subscribers} = QueueState, RSSItem) ->
-  case lists:keyfind(title, #xmlElement.name, RSSItem#xmlElement.content) of
-    false -> ok;
-    Title -> ?INFO("~s~p", [Title])
-  end,
   case get_item_recency_state(Items, RSSItem) of
     {same, _} ->
       ?INFO("got same item~n", []),
@@ -117,7 +113,6 @@ remove_subscriber(#queueState{items = Queue, subscribers = Subscribers} = QueueS
 add_item_to_server_queue(Queue, Item) ->
   case rss_parse:get_item_time(Item) of
     bad_date ->
-      ?ERROR("~p had bad_date~n", [Item]),
       throw("Item has bad_date");
     PubTime ->
       QueueItem = #queueItem{pubTime = PubTime, item = Item},

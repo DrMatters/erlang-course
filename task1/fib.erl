@@ -15,7 +15,7 @@ fib_g(N) -> fib_g(N - 1) + fib_g(N - 2).
 tail_fb(N) when N < 1 -> 0;
 tail_fb(N) -> tail_fb_helper(N, 1, 0, 1).
 
-%% @doc implements tail recurion for tail_fb
+%% @doc tail recurion for tail_fb
 tail_fb_helper(N, CurrentN, _, Cur) when N == CurrentN -> Cur;
 tail_fb_helper(N, CurrentN, Prev, Cur) ->
     tail_fb_helper(N, CurrentN + 1, Cur, Prev + Cur). 

@@ -4,7 +4,7 @@
 
 %% @doc initialises sieve process with initial prime number
 sieve() ->
-  receive
+  receive  %% receive и паттерн матчинг по сообщению
     {send, N} ->
       sieve_leaf_node(N)
   end.
@@ -43,7 +43,7 @@ sieve_parent_node(Divisor, ChildPID) ->
 
 %% @doc sends numbers from Current to End to PID using tail recursion
 send_seq(Current, End, PID) when Current > End ->
-  PID ! {done, self()};
+  PID ! {done, self()}; %% self() твой собственный pid, в него посылаем сообщение с рез-ми работы
 send_seq(Current, End, PID) ->
   PID ! {send, Current},
   send_seq(Current + 1, End, PID).

@@ -92,3 +92,6 @@ extract_xml(Comment = #xmlComment{}) ->
   Comment#xmlComment{parents = [], pos = 0};
 extract_xml(Other) ->
   Other.
+
+
+%% xml examples are at vova's repo: https://github.com/Mvwivs/erlang-course/tree/master/task_3

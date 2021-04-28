@@ -2,6 +2,7 @@
 -include("logging.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 -define(QUEUE_TIMEOUT_MILLISECONDS, 1000).
+%% queueItem - pubtime для удобной сортировки
 -record(queueItem, {pubTime, item}).
 -record(queueState, {items, subscribers}).
 -export([start/0, start/1, init/0, init/1, add_feed/2, get_all/1]).
@@ -94,6 +95,28 @@ handle_new_item(#queueState{items = Queue, subscribers = Subscribers}, NewItem) 
 handle_subscribe(#queueState{items = Queue, subscribers = Subscribers}, QPid) when is_pid(QPid) ->
   SubRef = erlang:monitor(process, QPid),
   UpdatedSubscribers = maps:put(QPid, SubRef, Subscribers),
+
+  % Паттерн матчинг
+  % t = (1, 2, 3)
+  % (a, b, c) = t
+
+  % nt = NamedTuple(a=0, b=1)
+  % nt_obj = nt(a='fuck', b='suck')
+  % nt(a=r, b=s) = nt_obj
+  % # вынимаем одно поле
+  % nt(a=f,) = nt_obj
+  % # еще вот так можно
+  % nt(a=nt(a=q,)) = nt_obj
+  % # можно матчить списки
+  % (где-то в коде несколько уровней вложенности и там список)
+
+  %% создаю лямбду, которая в кач-ве аргумента принимает рекорд queueItem
+  %% аргумент этой лямбды деструктурируется: поле item присваеваем в переменную Item
+  % def function(queue_item):
+  %   if isinstance(queue_item, NamedTuple('queue_item')):
+  %     Item = queue_item.item
+  %% можно матчить аргументы по вызовам конструкторов
+
   lists:foreach(fun(#queueItem{item = Item}) -> add_item(QPid, Item) end, Queue),
   #queueState{items = Queue, subscribers = UpdatedSubscribers}.
 

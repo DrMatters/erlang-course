@@ -76,7 +76,6 @@ test() ->
   QPID = start(),
   {Rss1, _} = xmerl_scan:file("digg-science-rss1.xml"),
   {Rss2, _} = xmerl_scan:file("digg-science-rss2.xml"),
-	% Items = rss_parse:get_feed_items(Rss),
   rss_queue:add_feed(QPID, Rss1),
   rss_queue:add_feed(QPID, Rss2),
   {_, Items} = rss_queue:get_all(QPID),

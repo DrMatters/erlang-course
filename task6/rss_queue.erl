@@ -69,8 +69,6 @@ handle_cast({add_item, RSSItem = #xmlElement{name = item}}, QueueState) ->
 
 %% @doc handles add_item message, adds RSSItem to Queue
 handle_add_item(#queueState{items = Items, subscribers = Subscribers} = QueueState, RSSItem) ->
-%%  Xml = lists:flatten(xmerl:export_simple([RSSItem], xmerl_xml)),
-%%  io:format("~s~n~n", [Xml]),
   case get_item_recency_state(Items, RSSItem) of
     {same, _} ->
       log_item_guid(same, RSSItem),

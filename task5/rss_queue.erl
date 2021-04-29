@@ -100,6 +100,7 @@ handle_new_item(#queueState{items = Queue, subscribers = Subscribers}, NewItem) 
 %% @doc subscribes QPid on Queue
 handle_subscribe(#queueState{items = Queue, subscribers = Subscribers}, QPid) when is_pid(QPid) ->
   SubRef = erlang:monitor(process, QPid),
+  % позволяет получать сообщения о том, что другой процесс выключается, перезагружается и т.п.
   UpdatedSubscribers = maps:put(QPid, SubRef, Subscribers),
 
   % Паттерн матчинг
@@ -160,9 +161,9 @@ get_item_recency_state([FeedItem | T], Item) ->
     different -> get_item_recency_state(T, Item)
   end.
 
-%% @doc broadcasts Item to all subscribers from QueuePIDs
-send_item_to_queues(Item, QueuePIDs) ->
-  SubsPIDs = maps:keys(QueuePIDs),
+%% @doc broadcasts Item to all subscribers from Subscribes
+send_item_to_queues(Item, Subscribes) ->
+  SubsPIDs = maps:keys(Subscribes),
   lists:foreach(fun(SubPID) -> add_item(SubPID, Item) end, SubsPIDs).
 
 test() ->

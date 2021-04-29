@@ -62,8 +62,10 @@ handle_call({subscribe, QPid}, _, QueueState) ->
   end.
 
 handle_cast({unsubscribe, QPid}, QueueState) -> {noreply, handle_unsubscribe(QueueState, QPid)};
+handle_cast({'DOWN', _, _, QPid, _}, QueueState) -> {noreply, handle_unsubscribe(QueueState, QPid)};
 handle_cast({add_item, RSSItem = #xmlElement{name = item}}, QueueState) ->
   {noreply, handle_add_item(QueueState, RSSItem)}.
+
 
 %% @doc handles add_item message, adds RSSItem to Queue
 handle_add_item(#queueState{items = Items, subscribers = Subscribers} = QueueState, RSSItem) ->
@@ -110,7 +112,6 @@ log_item_guid(State, Item) ->
     bad_guid -> {error, bad_guid};
     Guid -> ?INFO("~s item, guid = ~s", [State, Guid]), ok
   end.
-
 
 %% @doc performs insertion of Item to Queue
 add_item_to_server_queue(Queue, Item) ->

@@ -23,5 +23,5 @@ server(Url, QPid) ->
     {error, Reason} ->
       ?ERROR("exiting rss reader: ~p~n", [Reason]),
       exit(Reason);
-    _Else -> ?ERROR("fuck", []), exit("fuck")
+    _Else -> ?ERROR("unable to process message", []), exit("unable to process message")
   end.

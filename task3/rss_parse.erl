@@ -95,3 +95,10 @@ extract_xml(Other) ->
 
 
 %% xml examples are at vova's repo: https://github.com/Mvwivs/erlang-course/tree/master/task_3
+test() ->
+	{Rss, _} = xmerl_scan:file("test.xml"),
+	Items = rss_parse:get_feed_items(Rss),
+	Old = extract_xml(lists:nth(1, Items)),
+	New = extract_xml(lists:nth(2, Items)),
+	io:format("~p~n~n~n~p~n", [Old, New]),
+	Old =:= New.

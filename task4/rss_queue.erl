@@ -1,9 +1,10 @@
 -module(rss_queue).
 -define(QUEUE_TIMEOUT_MILLISECONDS, 1000).
 -record(queue_item, {pubTime, item}).
--export([server/0, start/0, add_feed/2, get_all/1]).
+-export([server/0, start/0, add_feed/2, get_all/1, test/0]).
 
 %% @doc spawns server process
+% ?MODULE - макрос, текущий модуль
 start() -> spawn(?MODULE, server, []).
 
 %% @doc sends item to queue
@@ -58,6 +59,7 @@ add_item_to_server_queue(Queue, Item) ->
 %% @doc performs insertion of Item to sorted list, maintains list order by pubTime
 add_item_to_sorted_list([], Item) -> [Item];
 add_item_to_sorted_list([H | T], Item) ->
+  % comparator
   CompareByPubTime = fun(#queue_item{pubTime = A}, #queue_item{pubTime = B}) -> A =< B end,
   lists:sort(CompareByPubTime, [Item, H | T]) .
 
@@ -69,3 +71,13 @@ get_item_recency_state([FeedItem | T], Item) ->
     updated -> {updated, FeedItem};
     different -> get_item_recency_state(T, Item)
   end.
+
+test() -> 
+  QPID = start(),
+  {Rss1, _} = xmerl_scan:file("digg-science-rss1.xml"),
+  {Rss2, _} = xmerl_scan:file("digg-science-rss2.xml"),
+	% Items = rss_parse:get_feed_items(Rss),
+  rss_queue:add_feed(QPID, Rss1),
+  rss_queue:add_feed(QPID, Rss2),
+  {_, Items} = rss_queue:get_all(QPID),
+  Items.

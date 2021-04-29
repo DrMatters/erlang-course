@@ -5,7 +5,7 @@
 %% queueItem - pubtime для удобной сортировки
 -record(queueItem, {pubTime, item}).
 -record(queueState, {items, subscribers}).
--export([start/0, start/1, init/0, init/1, add_feed/2, get_all/1]).
+-export([start/0, start/1, init/0, init/1, add_feed/2, get_all/1, test/0]).
 
 %% @doc spawns standalone rss_queue process
 start() -> spawn(?MODULE, init, []).
@@ -56,13 +56,19 @@ server_loop(QueueState) ->
         ?INFO("received add_item message~n", []),
         handle_add_item(QueueState, RSSItem);
       {get_all, ReqPid} ->
-        ?INFO("received get_all message~n", []);
+        ?INFO("received get_all message~n", []),
+        Items = lists:map(
+          fun(#queueItem{item = Item}) -> Item end,
+          QueueState#queueState.items
+        ),
+        ReqPid ! Items,
+        QueueState;
       {subscribe, QPid} ->
         ?INFO("received {subscribe, ~p} message~n", [QPid]),
         handle_subscribe(QueueState, QPid);
       {unsubscribe, QPid} ->
         ?INFO("received {unsubscribe, ~p} message~n", [QPid]),
-        handle_unsubscribe(QueueState, QPid);
+        remove_subscriber(QueueState, QPid);
       {'DOWN', _, _, QPid, _} ->
         ?WARN("received {DOWN, ~p} message~n", [QPid]),
         remove_subscriber(QueueState, QPid)
@@ -101,7 +107,7 @@ handle_subscribe(#queueState{items = Queue, subscribers = Subscribers}, QPid) wh
   % (a, b, c) = t
 
   % nt = NamedTuple(a=0, b=1)
-  % nt_obj = nt(a='fuck', b='suck')
+  % nt_obj = nt(a='big', b='energy')
   % nt(a=r, b=s) = nt_obj
   % # вынимаем одно поле
   % nt(a=f,) = nt_obj
@@ -119,9 +125,6 @@ handle_subscribe(#queueState{items = Queue, subscribers = Subscribers}, QPid) wh
 
   lists:foreach(fun(#queueItem{item = Item}) -> add_item(QPid, Item) end, Queue),
   #queueState{items = Queue, subscribers = UpdatedSubscribers}.
-
-%% @doc unsubscribes QPid from Queue
-handle_unsubscribe(QueueState, QPid) when is_pid(QPid) -> remove_subscriber(QueueState, QPid).
 
 %% @doc remove QPid subscriber from Queue
 remove_subscriber(#queueState{items = Queue, subscribers = Subscribers} = QueueState, QPid) ->
@@ -159,5 +162,19 @@ get_item_recency_state([FeedItem | T], Item) ->
 
 %% @doc broadcasts Item to all subscribers from QueuePIDs
 send_item_to_queues(Item, QueuePIDs) ->
-  SubsList = maps:keys(QueuePIDs),
-  lists:foreach(fun(SubPID) -> add_item(SubPID, Item) end, SubsList).
+  SubsPIDs = maps:keys(QueuePIDs),
+  lists:foreach(fun(SubPID) -> add_item(SubPID, Item) end, SubsPIDs).
+
+test() ->
+	inets:start(),
+	ssl:start(),
+	CnnPid = start("http://rss.cnn.com/rss/cnn_topstories.rss"),
+	BbcPid = start("http://newsrss.bbc.co.uk/rss/newsonline_world_edition/front_page/rss.xml"),
+	VedomostiPid = start("https://www.vedomosti.ru/rss/rubric/economics"),
+	NewsPid = start(),
+	AllPid = start(),
+	CnnPid ! {subscribe, NewsPid},
+	BbcPid ! {subscribe, NewsPid},
+	VedomostiPid ! {subscribe, AllPid},
+	NewsPid ! {subscribe, AllPid},
+	AllPid.

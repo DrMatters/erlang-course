@@ -88,7 +88,7 @@ compare_feed_items_by_link(OldItem, NewItem) -> compare_by_content(OldItem, NewI
 
 %% @doc extracts only necessary information from RSS elements
 extract_xml(Elem = #xmlElement{}) ->
-  Elem#xmlElement{parents = [], pos = 0,xmlbase=undeclared,
+  Elem#xmlElement{parents = [], pos = 0, xmlbase=undeclared,
     content = lists:map(fun extract_xml/1, Elem#xmlElement.content),
     attributes = lists:map(fun extract_xml/1, Elem#xmlElement.attributes)};
 extract_xml(Attr = #xmlAttribute{}) ->

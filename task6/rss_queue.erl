@@ -1,3 +1,6 @@
+% call - синхронный, ждем ответа от сёрвера.
+% cast - асинхронный, не требует возвращать рез-т ничего не ждет.
+
 -module(rss_queue).
 -include("logging.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
@@ -6,7 +9,8 @@
 -record(queueState, {items, subscribers}).
 -behaviour(gen_server).
 -export([init/1, handle_call/3, handle_cast/2]).
--export([start/1, start/2, add_feed/2, add_item/2, subscribe/2, unsubscribe/1, get_all/1]).
+-export([start/1, start/2, add_feed/2, add_item/2]).
+-export([subscribe/2, unsubscribe/1, get_all/1, test/0]).
 
 %% @doc spawns standalone rss_queue process
 start(Name) -> gen_server:start({local, Name}, ?MODULE, [], []).
@@ -15,7 +19,9 @@ start(Name) -> gen_server:start({local, Name}, ?MODULE, [], []).
 start(Name, URL) -> gen_server:start({local, Name}, ?MODULE, [URL], []).
 
 %% @doc performs initialisation of rss_queue process
-init([]) -> ?INFO("Starting standalone rss queue~n", []), {ok, #queueState{items = [], subscribers = maps:new()}};
+init([]) -> ?INFO("Starting standalone rss queue~n", []),
+% initial server state
+ {ok, #queueState{items = [], subscribers = maps:new()}};
 
 %% @doc performs initialisation of rss_queue linked with rss_reader
 init(Url) ->
@@ -35,7 +41,6 @@ add_feed(ID, RSS2Feed) when is_pid(ID) or is_atom(ID) ->
   ok.
 
 %% @doc retrieves all items from queue
-get_all(QPid) when is_pid(QPid) -> gen_server:call(QPid, {get_all}, ?QUEUE_TIMEOUT_MILLISECONDS);
 get_all(QPid) when is_pid(QPid) -> gen_server:call(QPid, {get_all}, ?QUEUE_TIMEOUT_MILLISECONDS).
 
 subscribe(Queue1, Queue2) when is_pid(Queue1) ->
@@ -145,3 +150,17 @@ get_items_from_state(#queueState{items = Items}) ->
 send_item_to_queues(Item, QueuePIDs) ->
   SubsList = maps:keys(QueuePIDs),
   lists:foreach(fun(SubPID) -> add_item(SubPID, Item) end, SubsList).
+
+test() ->
+	inets:start(),
+	ssl:start(),
+	{ok, _CnnPid} = start(cnn, "http://rss.cnn.com/rss/cnn_topstories.rss"),
+	{ok, _BbcPid} = start(bbc, "http://newsrss.bbc.co.uk/rss/newsonline_world_edition/front_page/rss.xml"),
+	{ok, _AlphaPid} = start(alpha, "https://seekingalpha.com/feed.xml"),
+	{ok, _NewsPid} = start(news),
+	{ok, _AllPid} = start(all),
+	subscribe(news, cnn),
+	subscribe(news, bbc),
+	subscribe(all, alpha),
+	subscribe(all, news),
+	all.

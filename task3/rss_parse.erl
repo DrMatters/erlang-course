@@ -1,11 +1,15 @@
 -module(rss_parse).
 -include_lib("xmerl/include/xmerl.hrl").
--export([is_rss2_feed/1, get_feed_items/1, get_item_time/1, compare_feed_items/2]).
+-export([is_rss2_feed/1, get_feed_items/1, get_item_time/1, compare_feed_items/2, test/0]).
 
 %% @doc checks if Root is a valid rss2 feed
 is_rss2_feed(Root) ->
+  % имя корневого атрибута = рсс
   Root#xmlElement.name == rss
     andalso
+  % атрибут version у этого корневого элемента = 2.0
+  % (что надо найти, в каком поле, где)
+  % получить у рута элемент .attributes
     case lists:keyfind(version, #xmlAttribute.name, Root#xmlElement.attributes) of
       #xmlAttribute{value = "2.0"} -> true;
       _Else -> false
@@ -18,6 +22,7 @@ get_feed_items(Root) -> xmerl_xpath:string("//item", Root).
 get_item_time(Item) ->
   case lists:keyfind(pubDate, #xmlElement.name, Item#xmlElement.content) of
     #xmlElement{content = [#xmlText{value = PubDate}]} ->
+      % <pubDate>Tue, 27 Jan 2009 01:10:10 +0000</pubDate>
       case httpd_util:convert_request_date(PubDate) of
         bad_date -> bad_date;
         Datetime -> calendar:datetime_to_gregorian_seconds(Datetime)
@@ -61,6 +66,7 @@ compare_feed_items_by_equality(_, _) -> different.
 compare_by_content(Left, Right, Key) ->
   LeftKey = lists:keyfind(Key, #xmlElement.name, Left#xmlElement.content),
   RightKey = lists:keyfind(Key, #xmlElement.name, Right#xmlElement.content),
+  % <title>[Renewable Energy Accounts For Largest Increase On U.S. Grid.]</title>
   if
     (LeftKey /= false) and (RightKey /= false) ->
       if
@@ -96,9 +102,14 @@ extract_xml(Other) ->
 
 %% xml examples are at vova's repo: https://github.com/Mvwivs/erlang-course/tree/master/task_3
 test() ->
+  % xmerl_scan вываливает результат в виде структуры рекордов
+  % "xmlElement",... туплей и списков
 	{Rss, _} = xmerl_scan:file("test.xml"),
 	Items = rss_parse:get_feed_items(Rss),
-	Old = extract_xml(lists:nth(1, Items)),
-	New = extract_xml(lists:nth(2, Items)),
+  % get_feed_items выводит объекты с разными ненужными атрибутами
+  % extract_xml оставляет только нужное. Если так не делать, то
+  % сравнения не будут работать (даже для одного и того же элемента)
+	Old = lists:nth(3, Items),
+	New = lists:nth(2, Items),
 	io:format("~p~n~n~n~p~n", [Old, New]),
-	Old =:= New.
+  rss_parse:compare_feed_items(Old, New).

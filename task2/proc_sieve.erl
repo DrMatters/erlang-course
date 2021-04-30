@@ -6,33 +6,33 @@
 sieve() ->
   receive  %% receive и паттерн матчинг по сообщению
     {send, N} ->
-      sieve_leaf_node(N)
+      sieve_last_node(N)
   end.
 
 %% @doc runs sieve node which doesn't have any children (yet)
-sieve_leaf_node(Divisor) ->
+sieve_last_node(Divisor) ->
   receive
     {send, N} ->
       if
         N rem Divisor == 0 ->
-          sieve_leaf_node(Divisor);
+          sieve_last_node(Divisor);
         true ->
           ChildPID = spawn(proc_sieve, sieve, []),
           ChildPID ! {send, N},
-          sieve_parent_node(Divisor, ChildPID)
+          sieve_intermediate_node(Divisor, ChildPID)
       end;
     {done, ReqPID} ->
       ReqPID ! [Divisor]
   end.
 %% @doc runs sieve node which has a children node
-sieve_parent_node(Divisor, ChildPID) ->
+sieve_intermediate_node(Divisor, ChildPID) ->
   receive
     {send, N} ->
       if
         N rem Divisor == 0 -> ok;
         true -> ChildPID ! {send, N}
       end,
-      sieve_parent_node(Divisor, ChildPID);
+      sieve_intermediate_node(Divisor, ChildPID);
     {done, ReqPID} ->
       ChildPID ! {done, self()},
       receive
@@ -50,8 +50,8 @@ send_seq(Current, End, PID) ->
 
 %% @doc generates prime numbers from 2 to MaxN
 generate(MaxN) ->
-  ChildPID = spawn(proc_sieve, sieve, []),
-  send_seq(2, MaxN, ChildPID),
+  BaseSievePID = spawn(proc_sieve, sieve, []),
+  send_seq(2, MaxN, BaseSievePID),
   receive
     Primes -> Primes
   end.

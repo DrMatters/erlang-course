@@ -66,7 +66,7 @@ add_item_to_sorted_list([H | T], Item) ->
 %% @doc retrieves recency state of Item from lists of items
 get_item_recency_state([], _) -> different;
 get_item_recency_state([FeedItem | T], Item) ->
-  case rss_parse:extract_and_compare(FeedItem#queue_item.item, Item) of
+  case rss_parse:compare_feed_items(FeedItem#queue_item.item, Item) of
     same -> {same, FeedItem};
     updated -> {updated, FeedItem};
     different -> get_item_recency_state(T, Item)

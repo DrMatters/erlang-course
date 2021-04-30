@@ -1,6 +1,6 @@
 -module(rss_parse).
 -include_lib("xmerl/include/xmerl.hrl").
--export([is_rss2_feed/1, get_feed_items/1, get_item_time/1, extract_and_compare/2, test/0]).
+-export([is_rss2_feed/1, get_feed_items/1, get_item_time/1, compare_feed_items/2, test/0]).
 
 %% @doc checks if Root is a valid rss2 feed
 is_rss2_feed(Root) ->
@@ -30,41 +30,40 @@ get_item_time(Item) ->
     false -> bad_date
   end.
 
-%% @doc compares recency of LItem and RItem
+%% @doc compares recency of OldItem and NewItem
 %% returns same, if items are the same
-%% returns updated, if NewItems is an updated version of the LItem
-%% returns different if LItem and RItem are different items
-extract_and_compare(LItem, RItem) ->
-  LExtractedItem = extract_xml(LItem),
-  RExtractedItem = extract_xml(RItem),
-  comp_comparator_list(
-    LExtractedItem,
-    RExtractedItem,
+%% returns updated, if NewItems is an updated version of the OldItem
+%% returns different if OldItem and NewItem are different items
+compare_feed_items(OldItem, NewItem) ->
+  OldItemPure = extract_xml(OldItem),
+  NewItemPure = extract_xml(NewItem),
+  compare_feed_items_comb(
+    OldItemPure,
+    NewItemPure,
     [
-      fun compare_equal/2,
-      fun compare_by_guid/2,
-      fun compare_by_title/2,
-      fun compare_by_link/2
-    ]
-  ).
+      fun compare_feed_items_by_equality/2,
+      fun compare_feed_items_by_guid/2,
+      fun compare_feed_items_by_title/2,
+      fun compare_feed_items_by_link/2
+    ]).
 
-%% @doc checks recency of LItem and RItem using the list of comparators
+%% @doc checks recency of OldItem and NewItem using the list of comparators
 %% propagates updated and same result
 %% fallbacks on next comparator if current comparator returned different atom
-comp_comparator_list(_, _, []) -> different;
-comp_comparator_list(LItem, RItem, [H | Rest]) ->
-  case H(LItem, RItem) of
+compare_feed_items_comb(_, _, []) -> different;
+compare_feed_items_comb(OldItem, NewItem, [H | Rest]) ->
+  case H(OldItem, NewItem) of
     updated -> updated;
     same -> same;
-    different -> comp_comparator_list(LItem, RItem, Rest)
+    different -> compare_feed_items_comb(OldItem, NewItem, Rest)
   end.
 
-%% @doc comparator to compare recency of LItem and RItem by equality
-compare_equal(LItem, RItem) when LItem == RItem -> same;
-compare_equal(_, _) -> different.
+%% @doc comparator to compare recency of OldItem and NewItem by equality
+compare_feed_items_by_equality(OldItem, NewItem) when OldItem == NewItem -> same;
+compare_feed_items_by_equality(_, _) -> different.
 
 %% @doc compares recency of Left and Right items using Key element of content
-base_compare(Left, Right, Key) ->
+compare_by_content(Left, Right, Key) ->
   LeftKey = lists:keyfind(Key, #xmlElement.name, Left#xmlElement.content),
   RightKey = lists:keyfind(Key, #xmlElement.name, Right#xmlElement.content),
   % <title>[Renewable Energy Accounts For Largest Increase On U.S. Grid.]</title>
@@ -77,14 +76,14 @@ base_compare(Left, Right, Key) ->
     true -> different
   end.
 
-%% @doc compares recency of LItem and RItem using guid content element
-compare_by_guid(LItem, RItem) -> base_compare(LItem, RItem, guid).
+%% @doc compares recency of OldItem and NewItem using guid content element
+compare_feed_items_by_guid(OldItem, NewItem) -> compare_by_content(OldItem, NewItem, guid).
 
-%% @doc compares recency of LItem and RItem using title content element
-compare_by_title(LItem, RItem) -> base_compare(LItem, RItem, title).
+%% @doc compares recency of OldItem and NewItem using title content element
+compare_feed_items_by_title(OldItem, NewItem) -> compare_by_content(OldItem, NewItem, title).
 
-%% @doc compares recency of LItem and RItem using link content element
-compare_by_link(LItem, RItem) -> base_compare(LItem, RItem, link).
+%% @doc compares recency of OldItem and NewItem using link content element
+compare_feed_items_by_link(OldItem, NewItem) -> compare_by_content(OldItem, NewItem, link).
 
 %% @doc extracts only necessary information from RSS elements
 extract_xml(Elem = #xmlElement{}) ->
@@ -113,4 +112,4 @@ test() ->
 	Old = lists:nth(3, Items),
 	New = lists:nth(2, Items),
 	io:format("~p~n~n~n~p~n", [Old, New]),
-  rss_parse:extract_and_compare(Old, New).
+  rss_parse:compare_feed_items(Old, New).

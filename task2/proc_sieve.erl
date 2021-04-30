@@ -42,11 +42,11 @@ sieve_intermediate_node(Divisor, ChildPID) ->
   end.
 
 %% @doc sends numbers from Current to End to PID using tail recursion
-send_seq(Current, End, PID) when Current > End ->
-  PID ! {done, self()}; %% self() твой собственный pid, в него посылаем сообщение с рез-ми работы
-send_seq(Current, End, PID) ->
-  PID ! {send, Current},
-  send_seq(Current + 1, End, PID).
+send_seq(Current, End, BaseSievePID) when Current > End ->
+  BaseSievePID ! {done, self()}; %% self() твой собственный pid, в него посылаем сообщение с рез-ми работы
+send_seq(Current, End, BaseSievePID) ->
+  BaseSievePID ! {send, Current},
+  send_seq(Current + 1, End, BaseSievePID).
 
 %% @doc generates prime numbers from 2 to MaxN
 generate(MaxN) ->

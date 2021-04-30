@@ -1,6 +1,6 @@
 -module(rss_parse).
 -include_lib("xmerl/include/xmerl.hrl").
--export([is_rss2_feed/1, get_feed_items/1, get_item_time/1, extract_and_compare/2]).
+-export([is_rss2_feed/1, get_feed_items/1, get_item_time/1, compare_feed_items/2]).
 
 %% @doc checks if Root is a valid rss2 feed
 is_rss2_feed(Root) ->
@@ -29,12 +29,12 @@ get_item_time(Item) ->
 %% returns same, if items are the same
 %% returns updated, if NewItems is an updated version of the OldItem
 %% returns different if OldItem and NewItem are different items
-extract_and_compare(OldItem, NewItem) ->
-  OldItemPure = extract_xml(OldItem),
-  NewItemPure = extract_xml(NewItem),
+compare_feed_items(OldItem, NewItem) ->
+  OldExtractedItem = extract_xml(OldItem),
+  NewExtractedItem = extract_xml(NewItem),
   comp_comparator_list(
-    OldItemPure,
-    NewItemPure,
+    OldExtractedItem,
+    NewExtractedItem,
     [
       fun compare_equal/2,
       fun compare_by_guid/2,
